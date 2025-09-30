@@ -4,12 +4,14 @@ import Input from "./components/Input";
 import Form from "./components/Form";
 import Names from "./components/Names";
 import personService from "./services/persons";
-
+import Notification from "./components/Notification";
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newPhone, setnewPhone] = useState("");
   const [search, setSearch] = useState("");
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     personService.getAll().then((response) => {
@@ -50,6 +52,10 @@ const App = () => {
     if (alreadyIn) {
       if (window.confirm("Do you wanna update the person's phone number?")) {
         const updatedPerson = { ...alreadyIn, phone: newPhone };
+        setMessage(`Person '${newName}' was updated.`);
+        setTimeout(() => {
+          setMessage(null);
+        }, 5000);
         personService
           .update(alreadyIn.id, updatedPerson)
           .then((response) =>
@@ -58,9 +64,21 @@ const App = () => {
                 person.id !== alreadyIn.id ? person : updatedPerson
               )
             )
-          );
+          )
+          .catch((error) => {
+            setError("error");
+            setMessage("valami error");
+            setTimeout(() => {
+              setMessage(null);
+              setError(null);
+            }, 5000);
+          });
       }
     } else {
+      setMessage(`Person '${newName}' was added.`);
+      setTimeout(() => {
+        setMessage(null);
+      }, 5000);
       personService
         .create(newNameObject)
         .then((response) => setPersons(persons.concat(response)));
@@ -75,6 +93,7 @@ const App = () => {
       <h2>Phonebook</h2>
       <Input value={"Filter shown with"} handler={handleOnChangeSearch} />
       <h2>Add a new</h2>
+      <Notification message={message} err={error} />
       <Form
         buttonHandler={handleOnClick}
         nameChange={handleOnChangeName}
