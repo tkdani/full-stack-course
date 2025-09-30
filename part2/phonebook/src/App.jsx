@@ -3,6 +3,7 @@ import axios from "axios";
 import Input from "./components/Input";
 import Form from "./components/Form";
 import Names from "./components/Names";
+import personService from "./services/persons";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
@@ -11,8 +12,8 @@ const App = () => {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    axios.get("http://localhost:3001/persons").then((response) => {
-      setPersons(response.data);
+    personService.getAll().then((response) => {
+      setPersons(response);
     });
   }, []);
 
@@ -30,18 +31,40 @@ const App = () => {
     setSearch(event.target.value.toLowerCase());
   };
 
+  const handleDeleteButton = (id) => {
+    if (window.confirm("Do you really wanna delete this number?")) {
+      setPersons(persons.filter((person) => person.id !== id));
+      personService.deletePerson(id);
+    }
+  };
+
   const handleOnClick = (event) => {
     event.preventDefault();
     const newNameObject = {
       name: newName,
       phone: newPhone,
-      id: String(persons.length + 1),
     };
 
-    const alreadyIn = persons.some((person) => person.name === newName);
-    alreadyIn
-      ? alert(`${newName} already in the list.`)
-      : setPersons(persons.concat(newNameObject));
+    const alreadyIn = persons.find((person) => person.name === newName);
+
+    if (alreadyIn) {
+      if (window.confirm("Do you wanna update the person's phone number?")) {
+        const updatedPerson = { ...alreadyIn, phone: newPhone };
+        personService
+          .update(alreadyIn.id, updatedPerson)
+          .then((response) =>
+            setPersons(
+              persons.map((person) =>
+                person.id !== alreadyIn.id ? person : updatedPerson
+              )
+            )
+          );
+      }
+    } else {
+      personService
+        .create(newNameObject)
+        .then((response) => setPersons(persons.concat(response)));
+    }
 
     setNewName("");
     setnewPhone(" ");
@@ -61,7 +84,7 @@ const App = () => {
       />
 
       <h2>Numbers</h2>
-      <Names shown={shown} />
+      <Names shown={shown} deleteButtonHandler={handleDeleteButton} />
     </div>
   );
 };
