@@ -12,12 +12,10 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
-    console.log("effect");
     noteService.getAll().then((initialNotes) => {
       setNotes(initialNotes);
     });
   }, []);
-  console.log("render", notes.length, "notes");
 
   const noteToShow = showAll ? notes : notes.filter((note) => note.important);
 
@@ -55,7 +53,6 @@ const App = () => {
   };
 
   const handleNoteChange = (event) => {
-    console.log(event.target.value);
     setNewNote(event.target.value);
   };
 
