@@ -1,9 +1,14 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const morgan = require("morgan");
-
 const cors = require("cors");
 
+require("dotenv").config();
+const Person = require("./models/person");
+
 const app = express();
+
+const PORT = process.env.PORT;
 
 app.use(express.static("dist"));
 app.use(cors());
@@ -44,32 +49,45 @@ app.get("/", (request, response) => {
   response.send("Hello world");
 });
 app.get("/api/persons", (request, response) => {
-  response.json(list);
+  Person.find({}).then((person) => response.json(person));
 });
 app.get("/info", (request, response) => {
   const date = new Date().toString();
-  const count = list.length;
-  response.send(`<p>Phonebook has info for ${count} people</p><p>${date}</p>`);
+  Person.countDocuments({}).then((count) => {
+    response.send(
+      `<p>Phonebook has info for ${count} people</p><p>${date}</p>`
+    );
+  });
 });
-app.get("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  const people = list.find((people) => people.id == id);
-  if (people) response.json(people);
-  else response.status(404).end();
-});
-
-app.delete("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  list = list.filter((person) => person.id !== id);
-  response.status(204).end();
+app.get("/api/persons/:id", (request, response, next) => {
+  Person.findById(request.params.id)
+    .then((person) => response.json(person))
+    .catch((error) => next(error));
 });
 
-const generateId = () => {
-  const maxId =
-    list.length > 0 ? Math.max(...list.map((n) => Number(n.id))) : 0;
-  return String(maxId + 1);
-};
+app.delete("/api/persons/:id", (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then((person) => response.json(person))
+    .catch((error) => next(error));
+});
+app.put("/api/persons/:id", (request, response, next) => {
+  const { name, number } = request.body;
 
+  Person.findById(request.params.id)
+    .then((person) => {
+      if (!person) {
+        return response.status(404).end();
+      }
+
+      person.name = name;
+      person.number = number;
+
+      return person.save().then((updatePerson) => {
+        response.json(updatePerson);
+      });
+    })
+    .catch((error) => next(error));
+});
 app.post("/api/persons", (request, response) => {
   const body = request.body;
 
@@ -84,17 +102,26 @@ app.post("/api/persons", (request, response) => {
 
   if (already) return response.status(400).json({ error: "name already in" });
 
-  const person = {
-    id: generateId(),
+  const person = new Person({
     name: body.name,
     number: body.number,
-  };
+  });
 
-  list = list.concat(person);
-  response.json(list);
+  person.save().then((savedPerson) => response.json(savedPerson));
 });
 
-const PORT = process.env.PORT || 3001;
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
+
 app.listen(PORT, () => {
   console.log(`Server is running on ${PORT} port`);
 });

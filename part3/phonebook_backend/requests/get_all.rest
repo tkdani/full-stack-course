@@ -1,7 +1,9 @@
 GET http://localhost:3001/api/persons
 
 ###
+GET http://localhost:3001/api/persons/68e26ca6d2edb1a4b1df6155
 
+###
 DELETE http://localhost:3001/api/persons/1
 
 ###
@@ -12,4 +14,13 @@ Content-Type: application/json
 {
     "name": "Takács Dániel",
     "number": "titok"
+}
+
+###
+PUT http://localhost:3001/api/persons/68e4e35696bf48a2e8306043
+Content-Type: application/json
+
+{
+    "name": "Takács Dániel",
+    "number": "masik titok"
 }
