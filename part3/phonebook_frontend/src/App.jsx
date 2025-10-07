@@ -48,7 +48,6 @@ const App = () => {
     };
 
     const alreadyIn = persons.find((person) => person.name === newName);
-
     if (alreadyIn) {
       if (window.confirm("Do you wanna update the person's phone number?")) {
         const updatedPerson = { ...alreadyIn, number: newPhone };
@@ -75,13 +74,26 @@ const App = () => {
           });
       }
     } else {
-      setMessage(`Person '${newName}' was added.`);
-      setTimeout(() => {
-        setMessage(null);
-      }, 5000);
       personService
         .create(newNameObject)
-        .then((response) => setPersons(persons.concat(newNameObject)));
+        .then((response) => {
+          setPersons(persons.concat(response));
+          setMessage(`Person '${newName}' was added.`);
+          setTimeout(() => {
+            setMessage(null);
+          }, 5000);
+        })
+        .catch((error) => {
+          console.log("Error object:", error);
+          if (error.response && error.response.data) {
+            setError(error.response.data.error);
+          } else {
+            setError("Something went wrong");
+          }
+          setTimeout(() => {
+            setError(null);
+          }, 5000);
+        });
     }
 
     setNewName("");

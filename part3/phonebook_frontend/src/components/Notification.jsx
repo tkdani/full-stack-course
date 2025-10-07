@@ -8,9 +8,10 @@ const Notification = ({ message, err }) => {
     padding: "10px",
     marginBottom: "10px",
   };
-
   if (message === null) {
-    return null;
+    if (err === null) {
+      return null;
+    } else return <div style={style}>{err}</div>;
   }
 
   return <div style={style}>{message}</div>;

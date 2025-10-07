@@ -16,7 +16,7 @@ mongoose
   });
 
 const noteSchema = new mongoose.Schema({
-  content: String,
+  content: { String, mindLength: 5, required: true },
   important: Boolean,
 });
 
