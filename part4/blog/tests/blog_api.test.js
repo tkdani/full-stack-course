@@ -4,6 +4,9 @@ const supertest = require("supertest");
 const app = require("../app");
 const assert = require("node:assert");
 const Blog = require("../models/blog");
+const User = require("../models/user");
+const bcrypt = require("bcrypt");
+
 const { title } = require("node:process");
 
 const api = supertest(app);
@@ -132,6 +135,88 @@ test("A blog can be updated with id", async () => {
     .expect("Content-Type", /application\/json/);
 
   assert.strictEqual(newBlog.body.likes, newLike);
+});
+
+describe("Username and password restrictions", () => {
+  beforeEach(async () => {
+    await User.deleteMany({});
+
+    const passwordHash = await bcrypt.hash("secret", 10);
+    const user = new User({ username: "root", passwordHash });
+
+    await user.save();
+  });
+
+  test("Password less than 3 characters", async () => {
+    const usersBefore = await api.get("/api/users");
+
+    const newUser = {
+      name: "takacs daniel",
+      username: "danitaka",
+      password: "ps",
+    };
+
+    const result = await api
+      .post("/api/users")
+      .send(newUser)
+      .expect(400)
+      .expect("Content-Type", /application\/json/);
+
+    const usersAfter = await api.get("/api/users");
+    assert(
+      result.body.error.includes(
+        "Password  needs to be at least 3 characters long."
+      )
+    );
+
+    assert.strictEqual(usersAfter.body.length, usersBefore.body.length);
+  });
+
+  test("Username less than 3 characters", async () => {
+    const usersBefore = await api.get("/api/users");
+
+    const newUser = {
+      name: "takacs daniel",
+      username: "da",
+      password: "sjfsf",
+    };
+
+    const result = await api
+      .post("/api/users")
+      .send(newUser)
+      .expect(400)
+      .expect("Content-Type", /application\/json/);
+
+    const usersAfter = await api.get("/api/users");
+    assert(
+      result.body.error.includes(
+        "Username needs to be at least 3 characters long."
+      )
+    );
+
+    assert.strictEqual(usersAfter.body.length, usersBefore.body.length);
+  });
+
+  test("Username not unique", async () => {
+    const usersBefore = await api.get("/api/users");
+
+    const newUser = {
+      name: "root",
+      username: "root",
+      password: "root",
+    };
+
+    const result = await api
+      .post("/api/users")
+      .send(newUser)
+      .expect(400)
+      .expect("Content-Type", /application\/json/);
+
+    const usersAfter = await api.get("/api/users");
+    assert(result.body.error.includes("expected `username` to be unique"));
+
+    assert.strictEqual(usersAfter.body.length, usersBefore.body.length);
+  });
 });
 
 after(async () => {

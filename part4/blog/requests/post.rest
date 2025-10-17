@@ -12,5 +12,29 @@ content-type: application/json
     "title": "dani",
     "author": "danivagyok",
     "url": "url",
-    "likes": 10
+    "likes": 10,
+    "userId":"68f262bea8f111c1601e74ef"
+}
+
+###
+
+GET http://localhost:3003/api/users
+
+###
+POST http://localhost:3003/api/users
+Content-Type: application/json
+
+{
+    "name": "dani",
+    "username" :"danitakacs",
+    "password": "jelszo"
+}
+
+###
+POST http://localhost:3003/api/login
+Content-Type: application/json
+
+{
+    "username": "danitakacs",
+    "password":"jelszo"
 }
