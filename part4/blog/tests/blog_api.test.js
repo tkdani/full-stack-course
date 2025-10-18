@@ -6,6 +6,7 @@ const assert = require("node:assert");
 const Blog = require("../models/blog");
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const { title } = require("node:process");
 
@@ -26,12 +27,27 @@ const initialBlogs = [
   },
 ];
 
+let token;
 beforeEach(async () => {
   await Blog.deleteMany({});
-  let blogObj = new Blog(initialBlogs[0]);
-  await blogObj.save();
-  blogObj = new Blog(initialBlogs[1]);
-  await blogObj.save();
+  await User.deleteMany({});
+
+  const passwordHash = await bcrypt.hash("sekret", 10);
+  const user = new User({ username: "root", passwordHash });
+  await user.save();
+
+  const userForToken = {
+    username: user.username,
+    id: user._id,
+  };
+
+  token = jwt.sign(userForToken, process.env.SECRET);
+
+  const blogObjects = initialBlogs.map(
+    (blog) => new Blog({ ...blog, user: user._id })
+  );
+  const promiseArray = blogObjects.map((blog) => blog.save());
+  await Promise.all(promiseArray);
 });
 
 test("blogs are returned as json", async () => {
@@ -67,6 +83,7 @@ test("a blogs can be posted", async () => {
 
   await api
     .post("/api/blogs")
+    .set("Authorization", `Bearer ${token}`)
     .send(newBlog)
     .expect(201)
     .expect("Content-Type", /application\/json/);
@@ -85,6 +102,7 @@ test("If like is undifined it should be 0", async () => {
 
   await api
     .post("/api/blogs")
+    .set("Authorization", `Bearer ${token}`)
     .send(blog)
     .expect(201)
     .expect("Content-Type", /application\/json/);
@@ -104,8 +122,16 @@ test("Missing title or url", async () => {
     url: "nicns",
   };
 
-  await api.post("/api/blogs").send(blog).expect(400);
-  await api.post("/api/blogs").send(blog2).expect(400);
+  await api
+    .post("/api/blogs")
+    .set("Authorization", `Bearer ${token}`)
+    .send(blog)
+    .expect(400);
+  await api
+    .post("/api/blogs")
+    .set("Authorization", `Bearer ${token}`)
+    .send(blog2)
+    .expect(400);
 
   const response = await api.get("/api/blogs");
 
@@ -116,7 +142,10 @@ test("A blog can be deleted with the id", async () => {
   blogsOg = await api.get("/api/blogs");
   deleteId = blogsOg.body[0].id;
 
-  await api.delete(`/api/blogs/${deleteId}`).expect(204);
+  await api
+    .delete(`/api/blogs/${deleteId}`)
+    .set("Authorization", `Bearer ${token}`)
+    .expect(204);
 
   blogsEnd = await api.get("/api/blogs");
 
