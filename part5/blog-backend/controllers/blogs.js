@@ -19,13 +19,12 @@ blogRouter.get("/", async (request, response) => {
 });
 
 blogRouter.post("/", middleware.userExtractor, async (request, response) => {
-  const user = request.user;
-
-  if (!user) {
-    return response.status(401).json({ error: "user not found" });
-  }
-
   const body = request.body;
+  const decodedToken = jwt.verify(getTokenFrom(request), process.env.SECRET);
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: "token invalid" });
+  }
+  const user = await User.findById(decodedToken.id);
   if (!body.title || !body.url) {
     return response.status(400).json({ error: "Missing title or url" });
   }
@@ -39,10 +38,15 @@ blogRouter.post("/", middleware.userExtractor, async (request, response) => {
 
   const savedBlog = await blog.save();
 
+  const populatedBlog = await savedBlog.populate("user", {
+    username: 1,
+    name: 1,
+  });
+
   user.blogs = user.blogs.concat(savedBlog._id);
   await user.save();
 
-  response.status(201).json(savedBlog);
+  response.status(201).json(populatedBlog);
 });
 
 blogRouter.delete(

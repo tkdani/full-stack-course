@@ -43,9 +43,6 @@ const App = () => {
     );
   };
   const handleDelete = async (blog) => {
-    const ok = window.confirm(`Remove blog "${blog.title}" by ${blog.author}?`);
-    if (!ok) return;
-
     try {
       await blogService.remove(blog.id);
       setBlogs(blogs.filter((b) => b.id !== blog.id));
@@ -63,10 +60,15 @@ const App = () => {
 
     try {
       const user = await loginService.login({ username, password });
+
       window.localStorage.setItem("loggedNoteappUser", JSON.stringify(user));
+
       setUser(user);
       setUsername("");
       setPassword("");
+
+      // 💥 EZ A LÉNYEG: token beállítása a blogService-ben
+      blogService.setToken(user.token);
     } catch {
       setErrorMessage("wrong credentials");
       setTimeout(() => {
@@ -74,6 +76,7 @@ const App = () => {
       }, 5000);
     }
   };
+
   const handleLogout = () => {
     window.localStorage.removeItem("loggedNoteappUser");
     setUser(null);
