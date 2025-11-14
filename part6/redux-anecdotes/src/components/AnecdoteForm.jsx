@@ -1,19 +1,16 @@
 import { useDispatch } from "react-redux";
-import { createAnec } from "../reducers/anecdoteReducer";
-import {
-  setNotification,
-  showNotification,
-} from "../reducers/notificationReducer";
+import { appendAnec } from "../reducers/anecdoteReducer";
+import { setNotification } from "../reducers/notificationReducer";
 
 const AnecdoteForm = () => {
   const dispatch = useDispatch();
 
-  const addAnec = (event) => {
+  const addAnec = async (event) => {
     event.preventDefault();
     const content = event.target.anec.value;
     event.target.anec.value = "";
-    dispatch(createAnec(content));
-    dispatch(showNotification(`${content} has been added`, 5));
+    dispatch(appendAnec(content));
+    dispatch(setNotification(`you voted '${anecdote.content}'`, 5));
   };
   return (
     <>
